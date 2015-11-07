@@ -34,7 +34,14 @@ __status__ = "Development"
 
 ###############################################################################
 
-import random, subprocess, re, glob, os
+import getopt
+import random
+import subprocess
+import re
+import glob
+import os
+import sys
+
 #import code
 import webbrowser, requests
 from PIL import Image
@@ -285,9 +292,61 @@ def doWork():
 
 
 
-def doWork_file():
-    glitch_routine( glitch(IMG_IN, from_file = True) )
+def doWork_file(filename):
+    
+    glitch_routine( glitch(filename, from_file = True) )
 
+def usage():
+    txt = """
+    ./glitch_random.py --mode=(flickr|file) [--source=filename]
+                        [--output=output_directory]
+    --source is optional, only needed if working in file mode
+    --output defaults to "."
+    """
+    print(txt)
+    return
+
+def main():
+    try:
+        opts, args = getopt.getopt(sys.argv[1:], "hm:s:o:", ["help",
+                                                         "mode=",
+                                                         "source=",
+                                                         "output="])
+    except getopt.GetoptError as err:
+        print(str(err))
+        usage()
+        sys.exit()
+
+    modes = ("flickr", "file")
+
+    # defaults
+    mode = None
+    source = None
+    output_dir = "."
+
+    # switch on our options
+    for o, a in opts:
+        if o in ("-h", "--help"):
+            usage()
+            sys.exit()
+        elif o in ("-m", "--mode"):
+            if a in modes:
+                mode = a
+            else:
+                usage()
+                sys.exit()
+        elif o in ("-s", "--source"):
+            source = a
+        elif o in ("-o", "--output"):
+            output_dir = a
+            # TODO: strip this global variable
+            PATH_OUT = output_dir
+
+    # change the behavior based on the mode
+    if mode == "flickr":
+        doWork()
+    elif mode == "file":
+        doWork_file(source)
 
 ###############################################################################
 ###############################################################################
@@ -296,8 +355,8 @@ def doWork_file():
 
 #KEY = 'new york city'
 #IMG_IN = '/Users/miriamshiffman/Downloads/screen-shot-2015-10-08-at-105557-am.png'
-#PATH_OUT = '/Users/miriamshiffman/Downloads/glitched'
+PATH_OUT = '.'
 
 
 if __name__ == '__main__':
-   doWork_file()
+    main()
