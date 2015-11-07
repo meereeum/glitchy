@@ -284,7 +284,7 @@ def glitch_routine(globj):
 
 
 def doWork():
-    hits = flickr_browse(KEY)
+    hits = flickr_browse()
     # five random images from flickr search as seeds
     for i in xrange(5):
         rando = hits.random( write = True )
