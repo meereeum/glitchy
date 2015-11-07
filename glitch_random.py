@@ -342,6 +342,11 @@ def main():
             # TODO: strip this global variable
             PATH_OUT = output_dir
 
+    # if no mode is specified
+    if not mode or (mode == "file" and not source):
+        usage()
+        sys.exit()
+
     # change the behavior based on the mode
     if mode == "flickr":
         doWork()
