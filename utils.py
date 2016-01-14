@@ -9,7 +9,8 @@ class flickr_browse():
     _API_KEY='6fb8c9ee707ff3eb8c610d4bfba9ddaf'
     BASE_URL='https://api.flickr.com/services/rest/?method=flickr.photos.search'
 
-    def __init__(self, text=''):
+    def __init__(self, text='', outdir='.'):
+        self.outdir = outdir
         if text:
             # get random images matching given keyword using Flickr's API
             # construct dictionary of arguments and use to construct URL to curl
@@ -58,7 +59,7 @@ class flickr_browse():
 
         if write:
             # write image data to file in directory specified by global PATH_OUT
-            outfile = outfile_path( PATH_OUT, '{}.jpg'.format(d_hit['id']) )
+            outfile = outfile_path( self.outdir, '{}.jpg'.format(d_hit['id']) )
             with open(outfile, "w") as file_out:
                 file_out.write( requests.get(hit_url).content )
 
