@@ -37,7 +37,7 @@ __status__ = "Development"
 import utils
 import random
 import re
-import sys
+import os, sys, getopt
 import webbrowser, requests
 from PIL import Image
 from collections import Counter, defaultdict
@@ -53,10 +53,11 @@ class glitch():
 
     MAX_CHUNK = 300
 
-    def __init__(self, path, from_file=False):
+    def __init__(self, path, from_file=False, outdir='.'):
         """Given path to image (local file or URL), initialize glitchable object"""
         self.path = path
         self.from_file = from_file
+        self.outdir = outdir
 
         if self.from_file:
             self.data = self.read_from_file(path)
@@ -88,9 +89,9 @@ class glitch():
             return file_in.read()
 
 
-    def write_to_file( self, outdir, pop_open=True ):
+    def write_to_file( self, pop_open=True ):
         """Write glitch art to file"""
-        outfile = utils.outfile_path(outdir, self.glitchname)
+        outfile = utils.outfile_path(self.outdir, self.glitchname)
 
         with open(outfile, "w") as file_out:
             file_out.write(self.data)
@@ -101,13 +102,18 @@ class glitch():
         self.change_log = self.change_log[:-1]
 
         if pop_open:
-            webbrowser.get("open -a /Applications/Google\ Chrome.app %s")\
-                .open('file://localhost{}'.format(outfile), new=2) # open in new tab, if possible
+            # TODO: ranked webbrowser opener ?
+            # open in new Chrome tab
+            #webbrowser.get("open -a /Applications/Google\ Chrome.app %s").open(outfile, new=2)
+            webbrowser.get("open -a /Applications/Firefox.app %s").open(outfile, new=2)
+
+            # open in default browser (new tab if possible)
+            #webbrowser.open(outfile, new=2)
 
 
-    def reload(self):
+    def reset(self):
         """Restarts glitch object from scratch (original source image and empty changelog)"""
-        self.__init__(path = self.path, from_file = self.from_file)
+        self.__init__(path=self.path, from_file=self.from_file, outdir=self.outdir)
         print '\n{}, looking fresh\n'.format(self.name)
         #print self.change_log
 
@@ -164,6 +170,9 @@ class glitch():
         """Sort pixels by frequency and, optionally, by Euclidean distance (within a given frequency)"""
         # Read globj data into PIL Image object
         self.img = Image.open(StringIO(self.data))
+        # overrwrite glitchname to add '.pixelsorted' before file suffix
+        self.glitchname = re.sub('(\.[^\.]*)$', r'.pixelsorted\1', self.name)
+
         # Generate list of tuples representing pixel (R,G,B)s
         pixels = [t for t in self.img.getdata()]
         pixels_sorted = []
@@ -203,75 +212,88 @@ def glitch_routine(globj):
         for j in xrange(3):
             globj.digit_increment(max_chunk = 1000, max_n = 4)
             globj.genome_rearrange()
-            globj.write_to_file(outdir=PATH_OUT)
-        globj.reload()
+            globj.write_to_file()
+        globj.reset()
     # also implement pixel sort
     globj.pixel_sort()
-    globj.write_to_file(outdir=PATH_OUT)
+    globj.write_to_file()
 
 
-
-def doWork_flickr(key, n):
-    hits = utils.flickr_browse(text = key)
+def doWork_flickr(key, outdir, n=5):
+    hits = utils.flickr_browse(text=key, outdir=outdir)
     # n random images from flickr search as seeds
     for i in xrange(n):
         rando = hits.random( write = True )
-        glitch_routine( glitch(rando) )
+        glitch_routine( glitch(rando, from_file=False, outdir=outdir) )
 
 
-
-def doWork_file(img_in):
-    glitch_routine( glitch(img_in, from_file = True) )
-
+def doWork_file(filename, outdir):
+    glitch_routine( glitch(filename, from_file=True, outdir=outdir) )
 
 
-def parse_args():
-    _USAGE = 'USAGE: python glitch_random.py [file, flickr] [ <path/to/file> OR <flickr keyword/s> ] [ <path/to/outdir> ]'
-    global PATH_OUT
+def usage():
+    txt = """
+    ./glitch_random.py --mode=(flickr|file) --input=(keyword|filename)
+                        [--output=output_directory]
 
-    #for i, thing in enumerate(sys.argv):
-        #print '{}) {}'.format(i, thing)
-#
-    #return
-
-    if len(sys.argv) == 1 or ( len(sys.argv) == 2 and sys.argv[1] in ('-h', '--help') ):
-        print _USAGE
-        return
-    if len(sys.argv) < 4:
-        raise Exception( '\n\n'.join(('Missing command-line arguments!', _USAGE)) )
-    input_arg = sys.argv[1].lower()
-    if input_arg not in ('file', 'flickr'):
-        raise Exception( '\n\n'.join(('Specify from "file" or "flickr" keyword!', _USAGE)) )
-
-    # specify last argument as outdir, since flickr keyword search might be >1 wd
-    PATH_OUT = sys.argv[-1]
-
-    if input_arg == 'file':
-        IMG_IN = sys.argv[2]
-        doWork_file(IMG_IN)
-
-    # otherwise, input must be keyword search of Flickr
-    else:
-        # convert multi-wd keyword search to single key string
-        KEY = ' '.join(sys.argv[2:-1])
-        doWork_flickr(KEY, 2)
+    --input is keyword if in flickr mode OR path/to/file if in file mode
+    --output defaults to "."
+    """
+    print(txt)
+    return
 
 
+def main():
+    try:
+        opts, args = getopt.getopt(sys.argv[1:], "hm:i:o:", ["help",
+                                                         "mode=",
+                                                         "input=",
+                                                         "output="])
+    except getopt.GetoptError as err:
+        print(str(err))
+        usage()
+        sys.exit()
+
+    modes = ("flickr", "file")
+
+    # defaults
+    mode = None
+    input_arg = None
+    output_dir = "."
+
+    # switch on our options
+    for o, initial_a in opts:
+        a = re.sub('^=','',initial_a)
+        if o in ("-h", "--help"):
+            usage()
+            sys.exit()
+        elif o in ("-m", "--mode"):
+            if a in modes:
+                mode = a
+            else:
+                usage()
+                sys.exit()
+        elif o in ("-i", "--input"):
+            # TODO: multiple keywds ??
+            input_arg = a
+        elif o in ("-o", "--output"):
+            output_dir = a
+
+    # if no mode is specified
+    if not mode or not input_arg:
+        usage()
+        sys.exit()
+
+    # change the behavior based on the mode
+    if mode == "flickr":
+        doWork_flickr(input_arg, output_dir)
+    elif mode == "file":
+        doWork_file(input_arg, output_dir)
 
 ###############################################################################
 ###############################################################################
 ###############################################################################
 ###############################################################################
-
-PATH_OUT = '.'
-
-#KEY = 'new york city'
-#IMG_IN = '/Users/miriamshiffman/Downloads/screen-shot-2015-10-08-at-105557-am.png'
-#PATH_OUT = '/Users/miriamshiffman/Downloads/glitched'
-#TODO: args to parse:
-# -f / --file_in OR -k / --flickr_key
-# -o / --outdir
-# glitch_random.py <file / flickr> <path/to/file OR flickr keyword> <outdir>
 
 if __name__ == '__main__':
-    parse_args()
+    main()
