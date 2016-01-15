@@ -265,6 +265,7 @@ def main():
 
     # switch on our options
     for o, initial_a in opts:
+        # eliminate leading "=", if any
         a = re.sub('^=','',initial_a)
         if o in ("-h", "--help"):
             usage()
