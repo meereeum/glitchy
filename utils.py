@@ -29,7 +29,7 @@ class flickr_browse():
             curled = subprocess.check_output("curl \
             '{}{}'".format( self.BASE_URL, args ), shell = True)
 
-        # TO DO: other ways to search flickr? (by geotag, etc)
+        # TODO: other ways to search flickr? (by geotag, etc)
         else:
             pass
 

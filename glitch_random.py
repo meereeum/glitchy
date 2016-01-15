@@ -34,14 +34,18 @@ __status__ = "Development"
 
 ###############################################################################
 
-import utils
 import random
 import re
-import os, sys, getopt
-import webbrowser, requests
+import os
+import sys
+import getopt
+import webbrowser
+import requests
 from PIL import Image
 from collections import Counter, defaultdict
 from StringIO import StringIO
+
+import utils
 
 ###############################################################################
 ###############################################################################
@@ -53,7 +57,7 @@ class glitch():
 
     MAX_CHUNK = 300
 
-    def __init__(self, path, from_file=False, outdir='.'):
+    def __init__(self, path, from_file = False, outdir = '.'):
         """Given path to image (local file or URL), initialize glitchable object"""
         self.path = path
         self.from_file = from_file
@@ -89,7 +93,7 @@ class glitch():
             return file_in.read()
 
 
-    def write_to_file( self, pop_open=True ):
+    def write_to_file(self, pop_open = True):
         """Write glitch art to file"""
         outfile = utils.outfile_path(self.outdir, self.glitchname)
 
@@ -105,8 +109,8 @@ class glitch():
             # TODO: ranked webbrowser opener ?
             # open in new Chrome tab
             #webbrowser.get("open -a /Applications/Google\ Chrome.app %s").open(outfile, new=2)
+            # open in new Firefox tab
             webbrowser.get("open -a /Applications/Firefox.app %s").open(outfile, new=2)
-
             # open in default browser (new tab if possible)
             #webbrowser.open(outfile, new=2)
 
@@ -133,7 +137,7 @@ class glitch():
         return [self.data[splice_origin : splice_end], (splice_origin, splice_end)]
 
 
-    def genome_rearrange(self, max_n=5, max_chunk = MAX_CHUNK):
+    def genome_rearrange(self, max_n = 5, max_chunk = MAX_CHUNK):
         """Glitch according to rules of basic genome rearrangement:
         splice chunk, n times, into another location"""
         n = random.randint(1, max_n)
@@ -147,7 +151,7 @@ class glitch():
                             .format(b - a, a, b, site, n))
 
 
-    def digit_increment(self, max_chunk = MAX_CHUNK, max_n=1):
+    def digit_increment(self, max_chunk = MAX_CHUNK, max_n = 1):
         """Glitch by incrementing all digits in random data chunk by n (mod 10)"""
         n = random.randint(1, max_n)
         [chunk, (a, b)] = self._random_chunk(max_chunk)
@@ -166,7 +170,7 @@ class glitch():
         #self.size = self.img.size
 
 
-    def pixel_sort(self, by_dist=False):
+    def pixel_sort(self, by_dist = False):
         """Sort pixels by frequency and, optionally, by Euclidean distance (within a given frequency)"""
         # Read globj data into PIL Image object
         self.img = Image.open(StringIO(self.data))
@@ -197,8 +201,6 @@ class glitch():
         self.data = output.getvalue()
         self.change_log.append('Pixels sorted by frequency')
 
-
-
 ###############################################################################
 ###############################################################################
 ###############################################################################
@@ -219,16 +221,16 @@ def glitch_routine(globj):
     globj.write_to_file()
 
 
-def doWork_flickr(key, outdir, n=5):
-    hits = utils.flickr_browse(text=key, outdir=outdir)
+def doWork_flickr(key, outdir, n = 5):
+    hits = utils.flickr_browse(text = key, outdir = outdir)
     # n random images from flickr search as seeds
     for i in xrange(n):
         rando = hits.random( write = True )
-        glitch_routine( glitch(rando, from_file=False, outdir=outdir) )
+        glitch_routine( glitch(rando, from_file = False, outdir = outdir) )
 
 
 def doWork_file(filename, outdir):
-    glitch_routine( glitch(filename, from_file=True, outdir=outdir) )
+    glitch_routine( glitch(filename, from_file = True, outdir = outdir) )
 
 
 def usage():
@@ -239,7 +241,7 @@ def usage():
     --input is keyword if in flickr mode OR path/to/file if in file mode
     --output defaults to "."
     """
-    print(txt)
+    print txt
     return
 
 
@@ -250,7 +252,7 @@ def main():
                                                          "input=",
                                                          "output="])
     except getopt.GetoptError as err:
-        print(str(err))
+        print str(err)
         usage()
         sys.exit()
 
@@ -274,7 +276,6 @@ def main():
                 usage()
                 sys.exit()
         elif o in ("-i", "--input"):
-            # TODO: multiple keywds ??
             input_arg = a
         elif o in ("-o", "--output"):
             output_dir = a
