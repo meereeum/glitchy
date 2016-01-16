@@ -59,12 +59,12 @@ class glitch():
 
     def __init__(self, path, from_file = False, outdir = '.'):
         """Given path to image (local file or URL), initialize glitchable object"""
-        self.path = path
+        self.path = (os.path.expanduser(path) if from_file else path)
         self.from_file = from_file
-        self.outdir = outdir
+        self.outdir = os.path.expanduser(outdir)
 
         if self.from_file:
-            self.data = self.read_from_file(path)
+            self.data = self.read_from_file(self.path)
             self.name = os.path.basename(self.path)
 
         # if not from_file, path is a URL to image online
